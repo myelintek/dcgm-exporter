@@ -18,9 +18,11 @@ package dcgmexporter
 
 import (
 	"bufio"
+	"fmt"
 	sysOS "os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -74,6 +76,9 @@ func (p *hpcMapper) Process(metrics MetricsByCounter, sysInfo SystemInfo) error 
 		var modifiedMetrics []Metric
 		for _, metric := range metrics[counter] {
 			jobs, exists := gpuToJobMap[metric.GPU]
+			if !exists {
+				jobs, exists = gpuToJobMap[fmt.Sprintf("%s-%s", metric.GPU, metric.GPUInstanceID)]
+			}
 			if exists {
 				for _, job := range jobs {
 					modifiedMetric, err := deepCopy(metric)
@@ -148,8 +153,23 @@ func getGPUFiles(dirPath string) ([]string, error) {
 
 		_, err = strconv.Atoi(file.Name())
 		if err != nil {
-			logrus.Debugf("HPC mapper: file %q name doesn't match with GPU ID convention", file.Name())
-			continue
+			parts := strings.Split(file.Name(), "-")
+			if len(parts) != 2 {
+				logrus.Debugf("HPC mapper: file %q name doesn't match with GPU ID convention", file.Name())
+				continue
+			}
+
+			_, err = strconv.Atoi(parts[0])
+			if err != nil {
+				logrus.Debugf("HPC mapper: file %q name doesn't match with GPU ID convention", file.Name())
+				continue
+			}
+
+			_, err = strconv.Atoi(parts[1])
+			if err != nil {
+				logrus.Debugf("HPC mapper: file %q name doesn't match with GPU ID convention", file.Name())
+				continue
+			}
 		}
 		mappingFiles = append(mappingFiles, file.Name())
 	}
