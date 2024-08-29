@@ -77,7 +77,7 @@ func (p *hpcMapper) Process(metrics MetricsByCounter, sysInfo SystemInfo) error 
 		for _, metric := range metrics[counter] {
 			jobs, exists := gpuToJobMap[metric.GPU]
 			if !exists {
-				jobs, exists = gpuToJobMap[fmt.Sprintf("%s:%s", metric.GPU, metric.GPUInstanceID)]
+				jobs, exists = gpuToJobMap[fmt.Sprintf("%s-%s", metric.GPU, metric.GPUInstanceID)]
 			}
 			if exists {
 				for _, job := range jobs {
